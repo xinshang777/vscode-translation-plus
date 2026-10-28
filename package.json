@@ -1,0 +1,684 @@
+{
+  "name": "translation-plus",
+  "displayName": "Translation Plus（翻译并替换）",
+  "description": "移植 IntelliJ IDEA Translation 插件的核心体验：选中文本一键翻译并原地替换。支持 Google / Bing / DeepL / 有道 / OpenAI 兼容 / 自定义接口，注释与字符串智能识别，diff 预览。",
+  "version": "2.2.1",
+  "publisher": "local",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "translate",
+    "translation",
+    "翻译",
+    "i18n",
+    "replace"
+  ],
+  "icon": "assets/icon.png",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "translation.translate",
+        "title": "翻译",
+        "category": "Translation",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "translation.translateInclusive",
+        "title": "翻译（取最大范围词语）",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.translateExclusive",
+        "title": "翻译（只取最近一个词）",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.translateAndReplace",
+        "title": "翻译并替换",
+        "category": "Translation",
+        "icon": "$(replace)"
+      },
+      {
+        "command": "translation.translateAndReplaceWithLanguage",
+        "title": "选择目标语言后翻译并替换",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.selectEngine",
+        "title": "切换翻译引擎",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.selectTargetLanguage",
+        "title": "设置默认目标语言",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.setApiKey",
+        "title": "设置引擎 API Key（安全存储）",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.openDialog",
+        "title": "打开翻译对话框",
+        "category": "Translation",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "translation.translateDocumentation",
+        "title": "翻译光标处的悬浮文档",
+        "category": "Translation",
+        "icon": "$(book)"
+      },
+      {
+        "command": "translation.speak",
+        "title": "朗读选中文本（词典真人音源优先）",
+        "category": "Translation",
+        "icon": "$(unmute)"
+      },
+      {
+        "command": "translation.stopSpeaking",
+        "title": "停止朗读",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.speakLast",
+        "title": "朗读悬停卡片里的原文",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.copyLast",
+        "title": "复制悬停卡片里的译文",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.replaceLast",
+        "title": "用悬停卡片里的译文替换原文",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.addLastToVocabulary",
+        "title": "收藏悬停卡片里的单词到生词本",
+        "category": "Translation",
+        "icon": "$(star)"
+      },
+      {
+        "command": "translation.showVocabulary",
+        "title": "打开生词本",
+        "category": "Translation",
+        "icon": "$(book)"
+      },
+      {
+        "command": "translation.clearVocabulary",
+        "title": "清空生词本",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.removeFromVocabulary",
+        "title": "从生词本删除词条",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.showDictionaryDetail",
+        "title": "查看完整词典释义",
+        "category": "Translation",
+        "icon": "$(book)"
+      },
+      {
+        "command": "translation.pinCard",
+        "title": "钉住翻译卡片",
+        "category": "Translation",
+        "icon": "$(pin)"
+      },
+      {
+        "command": "translation.wordOfTheDay",
+        "title": "每日一词（从生词本抽取）",
+        "category": "Translation",
+        "icon": "$(calendar)"
+      },
+      {
+        "command": "translation.selectVoice",
+        "title": "选择 Edge 语音",
+        "category": "Translation",
+        "icon": "$(unmute)"
+      },
+      {
+        "command": "translation.showHistory",
+        "title": "打开翻译历史",
+        "category": "Translation",
+        "icon": "$(history)"
+      },
+      {
+        "command": "translation.openSettings",
+        "title": "打开本扩展设置",
+        "category": "Translation",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "translation.translateClipboard",
+        "title": "翻译顶栏输入（剪贴板预填）",
+        "category": "Translation",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "translation.toggleDocumentation",
+        "title": "切换文档原文 / 译文",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.toggleInlayHints",
+        "title": "开关注释行尾译文",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.showInlayDetail",
+        "title": "查看 / 复制行尾译文",
+        "category": "Translation"
+      },
+      {
+        "command": "translation.speakInlayText",
+        "title": "朗读行尾译文对应的原文",
+        "category": "Translation"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "translation.translateAndReplace",
+          "group": "1_translation@1",
+          "when": "editorTextFocus"
+        },
+        {
+          "command": "translation.translate",
+          "group": "1_translation@2",
+          "when": "editorTextFocus"
+        }
+      ],
+      "editor/title/context": [],
+      "commandPalette": []
+    },
+    "keybindings": [
+      {
+        "command": "translation.translate",
+        "key": "ctrl+shift+y",
+        "mac": "ctrl+cmd+u",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "translation.translateAndReplace",
+        "key": "ctrl+shift+x",
+        "mac": "ctrl+cmd+o",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "translation.openDialog",
+        "key": "ctrl+shift+o",
+        "mac": "ctrl+cmd+i",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "translation.selectEngine",
+        "key": "ctrl+shift+s",
+        "mac": "ctrl+cmd+y",
+        "when": "editorTextFocus"
+      }
+    ],
+    "configuration": {
+      "title": "Translation Plus",
+      "properties": {
+        "translation.engine": {
+          "type": "string",
+          "default": "bing",
+          "enum": [
+            "bing",
+            "google",
+            "baidu",
+            "tencent",
+            "aliyun",
+            "volcengine",
+            "caiyun",
+            "deepl",
+            "youdao",
+            "openai",
+            "custom"
+          ],
+          "enumDescriptions": [
+            "Bing 翻译（免费，国内可直连，默认）",
+            "Google 免费接口（免配置，国内需代理）",
+            "百度翻译（需 appId + 密钥）",
+            "腾讯云翻译（需 SecretId + SecretKey，TC3 签名）",
+            "阿里云翻译（需 AccessKeyId + AccessKeySecret，RPC 签名）",
+            "火山引擎翻译（需 AK + SK，V4 签名）",
+            "彩云小译（需 token）",
+            "DeepL（需 API Key，质量高）",
+            "有道智云（需 appKey + appSecret）",
+            "任意 OpenAI 兼容接口（质量最高，可自定义提示词）",
+            "自定义 HTTP 接口（模板化）"
+          ],
+          "description": "翻译引擎。"
+        },
+        "translation.targetLanguage": {
+          "type": "string",
+          "default": "zh-CN",
+          "description": "默认目标语言，取值见 README（zh-CN、zh-TW、en、ja、ko、fr、de、es、ru、pt、it、ar、th、vi、id、hi、tr、nl、pl）。"
+        },
+        "translation.sourceLanguage": {
+          "type": "string",
+          "default": "auto",
+          "description": "源语言，auto 表示自动检测。"
+        },
+        "translation.codeScope": {
+          "type": "string",
+          "default": "selection",
+          "enum": [
+            "selection",
+            "comments",
+            "commentsAndStrings"
+          ],
+          "enumDescriptions": [
+            "翻译并替换整个选区（与 IDEA 插件一致）",
+            "只翻译选区内的注释内容，代码原样保留",
+            "只翻译选区内的注释与字符串内容，代码原样保留"
+          ],
+          "description": "作用范围：翻译代码时可以选择只处理注释/字符串，避免破坏代码。"
+        },
+        "translation.smartStringFilter": {
+          "type": "boolean",
+          "default": true,
+          "description": "智能过滤字符串：忽略不含空格的字符串（如 import 路径、URL、常量名），只翻译像自然语言的字符串。"
+        },
+        "translation.previewBeforeReplace": {
+          "type": "boolean",
+          "default": false,
+          "description": "替换前先弹出差分预览，确认后再写入（对应 IDEA 插件的预览窗口）。"
+        },
+        "translation.preserveIndent": {
+          "type": "boolean",
+          "default": true,
+          "description": "多行翻译时尽量保留每行原有缩进。"
+        },
+        "translation.cacheEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "缓存翻译结果（内存 + 跨会话持久化），避免重复请求。"
+        },
+        "translation.cacheSize": {
+          "type": "number",
+          "default": 400,
+          "description": "缓存条目上限（对应源码 LruCache 的容量），超出后按最久未用淘汰。"
+        },
+        "translation.minInterval": {
+          "type": "number",
+          "default": 0,
+          "description": "同一引擎两次请求的最小间隔毫秒数（对应源码 translator.intervalLimit / RateLimiter），0 表示不限速。"
+        },
+        "translation.replacementLanguageSelection": {
+          "type": "boolean",
+          "default": false,
+          "description": "对应插件设置 Replacement > 替换前选择语言：开启后每次替换前先弹语言选择框。"
+        },
+        "translation.filterLanguages": {
+          "type": "boolean",
+          "default": true,
+          "description": "按当前引擎过滤目标语言列表（对应 Translator.supportedTargetLanguages），关掉显示全部 21 种。"
+        },
+        "translation.phoneticAccent": {
+          "type": "string",
+          "default": "us",
+          "enum": [
+            "us",
+            "uk"
+          ],
+          "enumDescriptions": [
+            "美音（音标用美式，发音 type=2）",
+            "英音（音标用英式，发音 type=1）"
+          ],
+          "description": "音标与发音口音。"
+        },
+        "translation.fallbackEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "当前引擎请求失败时，自动回退到其它免配置引擎（Bing / Google），并在日志中记录。"
+        },
+        "translation.hoverMode": {
+          "type": "string",
+          "default": "word",
+          "enum": [
+            "off",
+            "selection",
+            "word",
+            "all"
+          ],
+          "enumDescriptions": [
+            "悬停任意单词出卡片（默认，最接近 wisen/IDEA 的划词体验）",
+            "只有选中文本后悬停在选区上才显示",
+            "同第一项（保留兼容）",
+            "选区翻译 + 单词词典卡片都启用"
+          ],
+          "description": "划词/悬停翻译的触发方式。"
+        },
+        "translation.hoverDocumentation": {
+          "type": "boolean",
+          "default": true,
+          "description": "悬停单词时附带语言服务文档的译文（对应 IDEA 的 Quick Documentation 翻译），可点「看原文」切换。"
+        },
+        "translation.inlayHints": {
+          "type": "boolean",
+          "default": false,
+          "description": "在注释行尾以 InlayHint 显示译文（对应 IDEA 的内联文档翻译）。默认关闭，开启后按需翻译并缓存。"
+        },
+        "translation.languageServiceWordRange": {
+          "type": "boolean",
+          "default": true,
+          "description": "用语言服务 hover 返回的 range 当作词边界取词（对应 IDEA 的 PSI 取词），拿不到时回退到正则。"
+        },
+        "translation.dictionaryEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "悬停单词时附带有道词典的音标、词性释义、短语与双语例句（需要能访问 dict.youdao.com）。"
+        },
+        "translation.proxy": {
+          "type": "string",
+          "default": "",
+          "description": "HTTP(S) 代理，例如 http://127.0.0.1:7890。设置后 Google / DeepL / 词典请求都会走代理。"
+        },
+        "translation.autoSwapDirection": {
+          "type": "boolean",
+          "default": true,
+          "description": "中英自动互译：目标中文但原文是中文时改译英文（悬停中文词也会给英文），IDEA 的替换动作同样如此。"
+        },
+        "translation.autoReplace": {
+          "type": "boolean",
+          "default": true,
+          "description": "对应插件设置 Auto replace：只有一个替换候选时直接替换，否则弹出候选列表让你选。"
+        },
+        "translation.separators": {
+          "type": "string",
+          "default": "_ -",
+          "description": "对应插件设置 Replace with Translation > Separator：生成下划线/中划线/空格等命名形式时使用哪些分隔符。"
+        },
+        "translation.selectionMode": {
+          "type": "string",
+          "default": "INCLUSIVE",
+          "enum": [
+            "INCLUSIVE",
+            "EXCLUSIVE"
+          ],
+          "enumDescriptions": [
+            "最大范围取词：连同相邻被分隔的词（对应 Translate(Inclusive)）",
+            "只取最近的单个词（对应 Translate(Exclusive)）"
+          ],
+          "description": "没有选中文本时的自动取词模式，对应插件设置 Auto selection mode。"
+        },
+        "translation.replaceFormat": {
+          "type": "string",
+          "default": "original",
+          "enum": [
+            "original",
+            "camelCase",
+            "PascalCase",
+            "snake_case",
+            "kebab-case",
+            "space"
+          ],
+          "enumDescriptions": [
+            "原样输出（默认）",
+            "驼峰：uploadFile",
+            "大驼峰：UploadFile",
+            "下划线：upload_file",
+            "中划线：upload-file",
+            "空格分词：upload file"
+          ],
+          "description": "注释/多段批量替换时的命名风格。单词级替换用的是 createReplaceElements 的多候选列表，不受此项影响。"
+        },
+        "translation.timeout": {
+          "type": "number",
+          "default": 20000,
+          "description": "单次请求超时（毫秒）。"
+        },
+        "translation.google.endpoint": {
+          "type": "string",
+          "default": "translate.googleapis.com",
+          "description": "Google 翻译域名，可换成镜像，例如 translate.google.com。"
+        },
+        "translation.bing.endpoint": {
+          "type": "string",
+          "default": "www.bing.com",
+          "description": "Bing 翻译域名，国内可尝试 cn.bing.com。"
+        },
+        "translation.deepl.endpoint": {
+          "type": "string",
+          "default": "https://api-free.deepl.com/v2/translate",
+          "description": "DeepL 接口地址；付费版改为 https://api.deepl.com/v2/translate。"
+        },
+        "translation.deepl.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "DeepL API Key（建议用命令“设置引擎 API Key”存进安全存储，而不是写在这里）。"
+        },
+        "translation.youdao.appKey": {
+          "type": "string",
+          "default": "",
+          "description": "有道智云应用 ID。"
+        },
+        "translation.youdao.appSecret": {
+          "type": "string",
+          "default": "",
+          "description": "有道智云应用密钥（建议用命令存入安全存储）。"
+        },
+        "translation.ttsEngine": {
+          "type": "string",
+          "default": "edge",
+          "enum": [
+            "edge",
+            "google",
+            "openai",
+            "dictionary",
+            "system"
+          ],
+          "enumDescriptions": [
+            "Edge TTS（微软神经语音，整句合成，对应 tts/microsoft/*）",
+            "Google TTS（需 google.ttsKey；留空则用 translate_tts 免费接口）",
+            "OpenAI TTS（/audio/speech，需 openai.apiKey）",
+            "有道词典真人音源（只覆盖词条，长句自动降级）",
+            "系统语音合成（System.Speech / say / espeak，离线）"
+          ],
+          "description": "语音引擎。失败会按 edge → google → dictionary → system 顺序自动降级。"
+        },
+        "translation.edgeVoice": {
+          "type": "string",
+          "default": "",
+          "description": "Edge TTS 语音名，留空按语言自动选（如 zh-CN-XiaoxiaoNeural、en-US-AriaNeural）。"
+        },
+        "translation.edgeRate": {
+          "type": "number",
+          "default": 0,
+          "description": "Edge TTS 语速，-1 ~ 1，0 为正常。"
+        },
+        "translation.edgeChromiumVersion": {
+          "type": "string",
+          "default": "",
+          "description": "Edge TTS 使用的 Chromium 版本（形如 155.0.4283.45），对应源码 Http.DEFAULT_CHROMIUM_VERSION 与 registry 键。版本过旧会被服务端拒绝升级；留空用内置默认值。"
+        },
+        "translation.google.ttsKey": {
+          "type": "string",
+          "default": "",
+          "description": "Google Cloud TTS 的 API Key；留空则使用 translate_tts 免费接口。"
+        },
+        "translation.openai.ttsModel": {
+          "type": "string",
+          "default": "tts-1",
+          "description": "OpenAI TTS 模型（tts-1 / tts-1-hd / gpt-4o-mini-tts）。"
+        },
+        "translation.openai.ttsVoice": {
+          "type": "string",
+          "default": "alloy",
+          "description": "OpenAI TTS 声音（alloy / echo / fable / onyx / nova / shimmer）。"
+        },
+        "translation.segmentMode": {
+          "type": "string",
+          "default": "whole",
+          "enum": [
+            "whole",
+            "line",
+            "sentence"
+          ],
+          "enumDescriptions": [
+            "整段一次翻译（上下文最完整）",
+            "逐行翻译并逐行缓存：改一行只重新请求这一行（增量翻译）",
+            "逐句翻译并逐句缓存"
+          ],
+          "description": "多行文本的切分粒度，决定增量翻译的命中粒度。"
+        },
+        "translation.baidu.appId": {
+          "type": "string",
+          "default": "",
+          "description": "百度翻译 APP ID（建议用命令存入安全存储）。"
+        },
+        "translation.baidu.appKey": {
+          "type": "string",
+          "default": "",
+          "description": "百度翻译密钥（建议用命令存入安全存储）。"
+        },
+        "translation.tencent.secretId": {
+          "type": "string",
+          "default": "",
+          "description": "腾讯云 SecretId。"
+        },
+        "translation.tencent.secretKey": {
+          "type": "string",
+          "default": "",
+          "description": "腾讯云 SecretKey。"
+        },
+        "translation.tencent.region": {
+          "type": "string",
+          "default": "ap-guangzhou",
+          "description": "腾讯云地域。"
+        },
+        "translation.aliyun.accessKeyId": {
+          "type": "string",
+          "default": "",
+          "description": "阿里云 AccessKeyId。"
+        },
+        "translation.aliyun.accessKeySecret": {
+          "type": "string",
+          "default": "",
+          "description": "阿里云 AccessKeySecret。"
+        },
+        "translation.aliyun.region": {
+          "type": "string",
+          "default": "cn-hangzhou",
+          "description": "阿里云机器翻译地域。"
+        },
+        "translation.volcengine.accessKeyId": {
+          "type": "string",
+          "default": "",
+          "description": "火山引擎 Access Key ID。"
+        },
+        "translation.volcengine.secretKey": {
+          "type": "string",
+          "default": "",
+          "description": "火山引擎 Secret Access Key。"
+        },
+        "translation.caiyun.token": {
+          "type": "string",
+          "default": "",
+          "description": "彩云小译 token。"
+        },
+        "translation.openai.endpoint": {
+          "type": "string",
+          "default": "https://api.openai.com/v1",
+          "description": "OpenAI 兼容接口 base url，例如 https://api.deepseek.com/v1 或本地 http://127.0.0.1:11434/v1。"
+        },
+        "translation.openai.model": {
+          "type": "string",
+          "default": "gpt-4o-mini",
+          "description": "模型名称。"
+        },
+        "translation.openai.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API Key（建议用命令存入安全存储）。"
+        },
+        "translation.openai.systemPrompt": {
+          "type": "string",
+          "default": "",
+          "description": "自定义系统提示词，留空使用内置提示词。可用占位符 {{to}}、{{from}}。"
+        },
+        "translation.custom.url": {
+          "type": "string",
+          "default": "",
+          "description": "自定义接口 URL，支持占位符 {{text}} {{from}} {{to}}（会自动 URL 编码）。"
+        },
+        "translation.custom.method": {
+          "type": "string",
+          "default": "POST",
+          "enum": [
+            "GET",
+            "POST"
+          ],
+          "description": "请求方法。"
+        },
+        "translation.custom.headers": {
+          "type": "object",
+          "default": {
+            "Content-Type": "application/json"
+          },
+          "description": "请求头。值中同样支持占位符。"
+        },
+        "translation.custom.body": {
+          "type": "string",
+          "default": "",
+          "description": "请求体模板（JSON），支持占位符；{{text_json}} 为 JSON 转义后的文本。"
+        },
+        "translation.custom.responsePath": {
+          "type": "string",
+          "default": "",
+          "description": "从响应 JSON 中取译文的路径，例如 data.translations.0.text；留空则按纯文本处理响应。"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "translationPlus",
+          "title": "Translation Plus",
+          "icon": "assets/icon.png"
+        }
+      ]
+    },
+    "views": {
+      "translationPlus": [
+        {
+          "type": "webview",
+          "id": "translationPlus.card",
+          "name": "翻译卡片"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.80.0",
+    "@types/ws": "^8.18.2",
+    "@vscode/vsce": "^4.0.0",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "ws": "^8.22.0"
+  }
+}

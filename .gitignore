@@ -1,0 +1,15 @@
+node_modules/
+out/
+.npm-cache/
+*.vsix
+
+# 本地测试产物
+.activation-test/
+.edge-test.mp3
+.google-tts.mp3
+*.mp3
+
+# 编辑器/系统
+.vscode-test/
+.DS_Store
+Thumbs.db
