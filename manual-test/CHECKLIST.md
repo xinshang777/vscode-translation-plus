@@ -16,26 +16,26 @@
 
 | 编号 | 操作 | 预期 |
 |---|---|---|
-| T1 | 打开 `demo.ts`，选中 `check the file size before uploading it` → `Ctrl+Shift+X` | 弹出**候选列表** + 右侧**替换预览**文档；上下移动预览同步变；回车后变中文 |
+| T1 | 打开 `demo.ts`，选中 `check the file size before uploading it` → `Alt+C` | 弹出**候选列表** + 右侧**替换预览**文档；上下移动预览同步变；回车后变中文 |
 | T2 | 再按 `Ctrl+Z` | 一次撤销回英文 |
-| T3 | 选中整个函数体（多行）→ `Ctrl+Shift+X` | 全部变中文，缩进不乱 |
+| T3 | 选中整个函数体（多行）→ `Alt+C` | 全部变中文，缩进不乱 |
 | T4 | 光标停在某行（不选区）→ `Ctrl+Shift+Y` | 通知条出译文，带「替换/复制/朗读/打开日志」 |
-| T5 | `Alt+点击` 制造两个光标，各在一处英文上 → `Ctrl+Shift+X` | 两处都被替换 |
+| T5 | `Alt+点击` 制造两个光标，各在一处英文上 → `Alt+C` | 两处都被替换 |
 
 ## 2. 代码安全
 
 | 编号 | 操作 | 预期 |
 |---|---|---|
-| T6 | 设置 `translation.codeScope = comments`，全选文件 → `Ctrl+Shift+X` | 只有注释变中文；`'/api/upload'`、`'user_id'` 原样 |
+| T6 | 设置 `translation.codeScope = comments`，全选文件 → `Alt+C` | 只有注释变中文；`'/api/upload'`、`'user_id'` 原样 |
 | T7 | `codeScope = commentsAndStrings` 重做 | 注释 + `'Upload failed, please retry'` 变中文，路径/ID 不变 |
 | T8 | `smartStringFilter = false` 重做 T7 | 连 `'/api/upload'` 也被翻（证明开关生效） |
-| T9 | 选中顶部 JSDoc 整块 → `Ctrl+Shift+X` | 逐行翻译，`*` 对齐不破 |
+| T9 | 选中顶部 JSDoc 整块 → `Alt+C` | 逐行翻译，`*` 对齐不破 |
 
 ## 3. 中英互译
 
 | 编号 | 操作 | 预期 |
 |---|---|---|
-| T10 | 选中 `这是一行中文注释，用来测试中英自动互译` → `Ctrl+Shift+X` | 变英文 |
+| T10 | 选中 `这是一行中文注释，用来测试中英自动互译` → `Alt+C` | 变英文 |
 
 ## 4. 卡片 / 词典
 

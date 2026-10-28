@@ -2,7 +2,7 @@
   "name": "translation-plus",
   "displayName": "Translation Plus（翻译并替换）",
   "description": "移植 IntelliJ IDEA Translation 插件的核心体验：选中文本一键翻译并原地替换。支持 Google / Bing / DeepL / 有道 / OpenAI 兼容 / 自定义接口，注释与字符串智能识别，diff 预览。",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "publisher": "local",
   "license": "MIT",
   "engines": {
@@ -215,8 +215,8 @@
       },
       {
         "command": "translation.translateAndReplace",
-        "key": "ctrl+shift+x",
-        "mac": "ctrl+cmd+o",
+        "key": "alt+c",
+        "mac": "alt+c",
         "when": "editorTextFocus"
       },
       {
