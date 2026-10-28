@@ -5,8 +5,6 @@ import { conf } from './config';
 import { setExtensionContext } from './contextHolder';
 import { HistoryProvider } from './history';
 import { CommentInlayHintsProvider } from './inlayHints';
-import { CardViewProvider } from './cardView';
-import { ReplacePreviewProvider } from './preview';
 import { TranslationHoverProvider } from './hover';
 import { labelOf } from './languages';
 import { TranslationService } from './service';
@@ -56,8 +54,6 @@ export function activate(context: vscode.ExtensionContext): void {
   const historyProvider = new HistoryProvider(context.globalState);
   const hoverProvider = new TranslationHoverProvider(service);
   const inlayHintsProvider = new CommentInlayHintsProvider(service);
-  const replacePreview = new ReplacePreviewProvider();
-  const cardView = new CardViewProvider(service, vocabulary);
 
   // 朗读状态指示（对应 PlaybackStatus 的状态绑定）
   const speechStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 99);
@@ -73,20 +69,14 @@ export function activate(context: vscode.ExtensionContext): void {
     vocabularyProvider,
     historyProvider,
     inlayHintsProvider,
-    replacePreview,
-    cardView,
     { dispose: () => stopAudio() },
-    ...registerCommands(context, service, vocabulary, vocabularyProvider, inlayHintsProvider, replacePreview),
-    vscode.window.registerWebviewViewProvider(CardViewProvider.viewId, cardView, {
-      webviewOptions: { retainContextWhenHidden: true }
-    }),
+    ...registerCommands(context, service, vocabulary, vocabularyProvider, inlayHintsProvider),
     vscode.languages.registerHoverProvider({ scheme: 'file' }, hoverProvider),
     vscode.languages.registerHoverProvider({ scheme: 'untitled' }, hoverProvider),
     vscode.languages.registerInlayHintsProvider({ scheme: 'file' }, inlayHintsProvider),
     vscode.languages.registerInlayHintsProvider({ scheme: 'untitled' }, inlayHintsProvider),
     vscode.workspace.registerTextDocumentContentProvider(VocabularyProvider.scheme, vocabularyProvider),
     vscode.workspace.registerTextDocumentContentProvider(HistoryProvider.scheme, historyProvider),
-    vscode.workspace.registerTextDocumentContentProvider(ReplacePreviewProvider.scheme, replacePreview),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('translation')) {
         configureProxy(conf('proxy', ''));

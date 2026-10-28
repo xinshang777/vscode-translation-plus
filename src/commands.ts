@@ -3,8 +3,7 @@ import { extractSpans, isCodeLanguage, supportsComments, type TextSpan } from '.
 import { conf } from './config';
 import { isLookupableWord, lookupWord, lookupWordDetailed, type DictEntry } from './dictionary';
 import { docHoverState, nativeWordRange } from './docHover';
-import type { CardPanel } from './cardPanel';
-import { ReplacePreviewProvider } from './preview';
+
 import { HistoryProvider } from './history';
 import { lastLookup } from './hover';
 import type { CommentInlayHintsProvider } from './inlayHints';
@@ -180,15 +179,6 @@ function buildEdits(groups: WorkGroup[]): Edit[] {
   return merged;
 }
 
-function renderEdits(source: string, edits: Edit[]): string {
-  let output = '';
-  let cursor = 0;
-  for (const edit of edits) {
-    output += source.slice(cursor, edit.start) + edit.text;
-    cursor = edit.end;
-  }
-  return output + source.slice(cursor);
-}
 
 async function applyReplace(editor: vscode.TextEditor, groups: WorkGroup[]): Promise<boolean> {
   const doc = editor.document;
@@ -201,12 +191,6 @@ async function applyReplace(editor: vscode.TextEditor, groups: WorkGroup[]): Pro
       builder.replace(new vscode.Range(doc.positionAt(edit.start), doc.positionAt(edit.end)), edit.text);
     }
   });
-}
-
-async function showDiff(original: string, translated: string, title: string): Promise<void> {
-  const left = await vscode.workspace.openTextDocument({ content: original, language: 'plaintext' });
-  const right = await vscode.workspace.openTextDocument({ content: translated, language: 'plaintext' });
-  await vscode.commands.executeCommand('vscode.diff', left.uri, right.uri, title, { preview: true });
 }
 
 /**
@@ -250,7 +234,7 @@ async function replaceWithCandidates(
 
   let chosen = candidates[0];
   if (!(candidates.length === 1 && conf('autoReplace', true))) {
-    const picked = await pickCandidateWithPreview(candidates, source);
+    const picked = await pickCandidate(candidates, source);
     if (!picked) {
       return;
     }
@@ -338,57 +322,29 @@ async function showMarkdownBeside(content: string): Promise<void> {
   await vscode.window.showTextDocument(document, { preview: false, viewColumn: vscode.ViewColumn.Beside });
 }
 
-let activePreview: ReplacePreviewProvider | undefined;
-
-/**
- * B4：带侧栏实时预览的候选选择器。
- * 有 createQuickPick 时用它 + onDidChangeActive 驱动预览；没有则退回 showQuickPick。
- */
-async function pickCandidateWithPreview(candidates: string[], source: string): Promise<string | undefined> {
-  const preview = activePreview;
-  if (preview) {
-    try {
-      const document = await vscode.workspace.openTextDocument(ReplacePreviewProvider.uri);
-      await vscode.window.showTextDocument(document, {
-        viewColumn: vscode.ViewColumn.Beside,
-        preview: true,
-        preserveFocus: true
-      });
-    } catch {
-      /* 预览文档打不开不影响选择 */
-    }
-  }
-
+/** 对应 IDEA 的 Lookup 候选列表：只弹候选，不打开任何预览文档 */
+async function pickCandidate(candidates: string[], source: string): Promise<string | undefined> {
   if (typeof vscode.window.createQuickPick !== 'function') {
     const pick = await vscode.window.showQuickPick(
-      candidates.map((value, index) => ({ label: value, index })),
+      candidates.map((value) => ({ label: value })),
       { title: '选择替换形式', placeHolder: source.slice(0, 80) }
     );
-    preview?.clear();
     return pick?.label;
   }
 
   return new Promise<string | undefined>((resolve) => {
-    const quickPick = vscode.window.createQuickPick<vscode.QuickPickItem & { index: number }>();
+    const quickPick = vscode.window.createQuickPick<vscode.QuickPickItem>();
     quickPick.title = '选择替换形式（Esc 取消）';
     quickPick.placeholder = source.slice(0, 80);
-    quickPick.matchOnDescription = true;
-    quickPick.items = candidates.map((value, index) => ({ label: value, index }));
+    quickPick.items = candidates.map((value) => ({ label: value }));
     let accepted: string | undefined;
 
-    quickPick.onDidChangeActive((active) => {
-      const first = active[0];
-      if (first) {
-        preview?.setActive(first.index);
-      }
-    });
     quickPick.onDidAccept(() => {
       accepted = quickPick.selectedItems[0]?.label;
       quickPick.hide();
     });
     quickPick.onDidHide(() => {
       quickPick.dispose();
-      preview?.clear();
       resolve(accepted);
     });
     quickPick.show();
@@ -398,8 +354,7 @@ async function pickCandidateWithPreview(candidates: string[], source: string): P
 async function translateAndReplace(
   service: TranslationService,
   editor: vscode.TextEditor,
-  to: string | undefined,
-  forcePreview: boolean
+  to: string | undefined
 ): Promise<void> {
   const doc = editor.document;
   let slices = collectTargets(editor);
@@ -448,7 +403,7 @@ async function translateAndReplace(
   }
 
   // 单一选区/单词：走源码 ReplaceWithTranslationAction 的候选式替换
-  if (pending.length === 1 && pending[0].segments.length === 1 && !conf('previewBeforeReplace', false) && !forcePreview) {
+  if (pending.length === 1 && pending[0].segments.length === 1) {
     await replaceWithCandidates(service, editor, pending[0]);
     return;
   }
@@ -491,29 +446,6 @@ async function translateAndReplace(
   if (changed.length === 0) {
     void vscode.window.showInformationMessage('译文与原文一致，无需替换');
     return;
-  }
-
-  if (forcePreview || conf('previewBeforeReplace', false)) {
-    let before: string;
-    let after: string;
-    if (changed.length === 1) {
-      before = changed[0].slice.text;
-      after = applySegments(before, changed[0].results);
-    } else {
-      // 多光标：直接给整篇前后对比
-      const edits = buildEdits(changed);
-      before = doc.getText();
-      after = renderEdits(before, edits);
-    }
-    await showDiff(before, after, `翻译预览（${targetLabel}）`);
-    const pick = await vscode.window.showInformationMessage(
-      `已生成「${targetLabel}」译文预览，是否应用？`,
-      '应用并替换',
-      '取消'
-    );
-    if (pick !== '应用并替换') {
-      return;
-    }
   }
 
   const applied = await applyReplace(editor, changed);
@@ -681,14 +613,14 @@ export function registerCommands(
   service: TranslationService,
   vocabulary: VocabularyStore,
   vocabularyProvider: VocabularyProvider,
-  inlayHints?: CommentInlayHintsProvider,
-  preview?: ReplacePreviewProvider,
-  cardPanel?: CardPanel
+  inlayHints?: CommentInlayHintsProvider
 ): vscode.Disposable[] {
+  // 只注册 package.json 里声明过的动作：IDEA 没有的一律不暴露
+  const declared = new Set<string>(
+    (context.extension?.packageJSON?.contributes?.commands ?? []).map((item: { command: string }) => item.command)
+  );
   const register = (id: string, handler: (...args: unknown[]) => unknown) =>
-    vscode.commands.registerCommand(id, handler);
-
-  activePreview = preview;
+    declared.has(id) ? vscode.commands.registerCommand(id, handler) : new vscode.Disposable(() => undefined);
 
   const pickLookup = () => {
     const editor = vscode.window.activeTextEditor;
@@ -717,7 +649,7 @@ export function registerCommands(
       if (!editor) {
         return;
       }
-      await translateAndReplace(service, editor, undefined, false);
+      await translateAndReplace(service, editor, undefined);
     }),
 
     register('translation.translateAndReplaceWithLanguage', async () => {
@@ -736,56 +668,11 @@ export function registerCommands(
       if (!pick) {
         return;
       }
-      await translateAndReplace(service, editor, pick.id, false);
+      await translateAndReplace(service, editor, pick.id);
     }),
 
-    register('translation.previewTranslation', async () => {
-      const editor = vscode.window.activeTextEditor;
-      if (!editor) {
-        return;
-      }
-      await translateAndReplace(service, editor, undefined, true);
-    }),
 
-    register('translation.copyTranslation', async () => {
-      const editor = vscode.window.activeTextEditor;
-      if (!editor) {
-        return;
-      }
-      let slice = sliceFor(editor.document, editor.document.getText(), editor.selection);
-      if (slice && editor.selection.isEmpty && conf('languageServiceWordRange', true)) {
-        const native = await nativeWordRange(editor.document, editor.selection.active);
-        if (native) {
-          const text = editor.document.getText(native);
-          if (text.trim().length > 0) {
-            slice = { text, startOffset: editor.document.offsetAt(native.start) };
-          }
-        }
-      }
-      if (!slice || !slice.text.trim()) {
-        return;
-      }      try {
-        const outcome = await progress('翻译中…', () => service.translate(slice.text));
-        await vscode.env.clipboard.writeText(outcome.text);
-        void vscode.window.setStatusBarMessage(`$(check) 译文已复制（${outcome.engineName}）`, 3000);
-      } catch (error) {
-        await reportError(service, error, '复制译文');
-      }
-    }),
 
-    register('translation.translateDocumentComments', () => translateCommentsInDocument(service)),
-
-    register('translation.speak', () => speakSelection()),
-    register('translation.stopSpeaking', () => stopAudio()),
-
-    register('translation.speakLast', async () => {
-      const { entry } = pickLookup();
-      if (entry) {
-        await speakSmart(entry.text);
-      } else {
-        await speakSelection();
-      }
-    }),
 
     register('translation.copyLast', async () => {
       const { entry } = pickLookup();
@@ -846,8 +733,6 @@ export function registerCommands(
       translateClipboardFlow(context, service, vocabulary, () => vocabularyProvider.refresh())
     ),
 
-    register('translation.toggleCardPanel', () => cardPanel?.toggle()),
-
     register('translation.toggleDocumentation', async () => {
       docHoverState.mode = docHoverState.mode === 'translated' ? 'original' : 'translated';
       void vscode.window.setStatusBarMessage(
@@ -884,6 +769,18 @@ export function registerCommands(
         void vscode.window.setStatusBarMessage('$(check) 译文已复制', 3000);
       } else if (pick === '朗读原文') {
         await speakSmart(source);
+      }
+    }),
+
+    register('translation.speak', () => speakSelection()),
+    register('translation.stopSpeaking', () => stopAudio()),
+
+    register('translation.speakLast', async () => {
+      const { entry } = pickLookup();
+      if (entry) {
+        await speakSmart(entry.text);
+      } else {
+        await speakSelection();
       }
     }),
 
@@ -1046,10 +943,7 @@ export function registerCommands(
     register('translation.setApiKey', async () => {
       const groups: Array<{ label: string; description: string; fields: Array<{ key: string; label: string }> }> = [
         { label: '百度翻译', description: 'APP ID + 密钥', fields: [{ key: 'baidu.appId', label: 'APP ID' }, { key: 'baidu.appKey', label: '密钥' }] },
-        { label: '腾讯云翻译', description: 'SecretId + SecretKey', fields: [{ key: 'tencent.secretId', label: 'SecretId' }, { key: 'tencent.secretKey', label: 'SecretKey' }] },
         { label: '阿里云翻译', description: 'AccessKeyId + AccessKeySecret', fields: [{ key: 'aliyun.accessKeyId', label: 'AccessKeyId' }, { key: 'aliyun.accessKeySecret', label: 'AccessKeySecret' }] },
-        { label: '火山引擎翻译', description: 'AK + SK', fields: [{ key: 'volcengine.accessKeyId', label: 'Access Key ID' }, { key: 'volcengine.secretKey', label: 'Secret Access Key' }] },
-        { label: '彩云小译', description: 'token', fields: [{ key: 'caiyun.token', label: 'token' }] },
         { label: 'DeepL', description: 'API Key', fields: [{ key: 'deepl.apiKey', label: 'API Key' }] },
         { label: '有道智云', description: 'appKey + appSecret', fields: [{ key: 'youdao.appKey', label: '应用 ID' }, { key: 'youdao.appSecret', label: '应用密钥' }] },
         { label: 'OpenAI 兼容', description: 'API Key（随后填 base url 与模型）', fields: [{ key: 'openai.apiKey', label: 'API Key' }] }
@@ -1106,10 +1000,7 @@ export function registerCommands(
 
       const engineIdMap: Record<string, string> = {
         百度翻译: 'baidu',
-        腾讯云翻译: 'tencent',
         阿里云翻译: 'aliyun',
-        火山引擎翻译: 'volcengine',
-        彩云小译: 'caiyun',
         DeepL: 'deepl',
         有道智云: 'youdao',
         'OpenAI 兼容': 'openai'
@@ -1121,119 +1012,9 @@ export function registerCommands(
       void vscode.window.showInformationMessage(`已配置 ${pick.group.label}，并已切换为该引擎`);
     }),
 
-    register('translation.selfTest', async () => {
-      const lines: string[] = [];
-      let pass = 0;
-      let fail = 0;
-      const record = (name: string, ok: boolean, detail: string) => {
-        lines.push(`${ok ? '✅' : '❌'} ${name}：${detail}`);
-        if (ok) {
-          pass++;
-        } else {
-          fail++;
-        }
-      };
-      const started = Date.now();
-      lines.push(
-        `版本 ${context.extension.packageJSON.version ?? '?'}｜引擎 ${service.engine.name}｜目标 ${labelOf(
-          conf('targetLanguage', 'zh-CN')
-        )}｜作用范围 ${conf('codeScope', 'selection')}｜悬停 ${conf('hoverMode', 'selection')}｜切片 ${conf(
-          'segmentMode',
-          'line'
-        )}｜发音 ${conf('ttsEngine', 'edge')}`
-      );
 
-      const sample = 'Hello, world! This is a self test.';
-      let firstMs = 0;
-      try {
-        const t0 = Date.now();
-        const outcome = await service.translate(sample);
-        firstMs = Date.now() - t0;
-        record('引擎连通', true, `${outcome.text}（${firstMs}ms，${outcome.engineName}）`);
-      } catch (error) {
-        record('引擎连通', false, describeError(error));
-      }
 
-      const dictDetail = await lookupWordDetailed('upload', 8000, true);
-      const dict = dictDetail.entry;
-      record(
-        '词典查询',
-        Boolean(dict && dict.meanings.length > 0),
-        dict && dict.meanings.length > 0
-          ? `${dict.phonetic ?? ''} ${dict.meanings[0] ?? ''}`.trim()
-          : `失败：${dictDetail.error ?? '未返回释义'}`
-      );
 
-      try {
-        const result = await speakText('upload', 'en', conf<string>('ttsEngine', 'edge') as TtsEngine);
-        record('发音', result.played, result.engine === 'system' ? '系统 TTS' : result.engine);
-      } catch (error) {
-        record('发音', false, describeError(error));
-      }
-
-      const spans = extractSpans('// hello world\nconst a = "upload failed";', 'javascript', 'commentsAndStrings', true);
-      record('注释/字符串识别', spans.length === 2, `${spans.length} 段`);
-
-      const pieces = splitPieces('first line\nsecond line\nthird line', 'line');
-      record('增量切片', pieces.length === 3, `${pieces.length} 段`);
-
-      const t1 = Date.now();
-      try {
-        await service.translate(sample);
-        record('缓存', true, `第二次 ${Date.now() - t1}ms（首次 ${firstMs}ms）`);
-      } catch (error) {
-        record('缓存', false, describeError(error));
-      }
-
-      lines.push('', `结果：${pass} 通过 / ${fail} 失败，总用时 ${((Date.now() - started) / 1000).toFixed(1)}s`);
-      service.channel.appendLine(`\n===== 自检 ${new Date().toLocaleString()} =====\n${lines.join('\n')}`);
-      service.channel.show(true);
-      void vscode.window.showInformationMessage(
-        `自检完成：${pass} 通过 / ${fail} 失败（详情见 Translation Plus 输出面板）`
-      );
-    }),
-
-    register('translation.testAllEngines', async () => {
-      const engines = service.listEngines();
-      const lines: string[] = [`===== 全引擎连通性检测 ${new Date().toLocaleString()} =====`];
-      let ok = 0;
-      let bad = 0;
-      for (const engine of engines) {
-        const started = Date.now();
-        try {
-          const outcome = await service.translateWithEngine(engine.id as EngineId, 'Hello, world!', 'zh-CN');
-          const ms = Date.now() - started;
-          lines.push(`✅ ${engine.name}（${engine.id}）：${outcome.text.slice(0, 40)}  ${ms}ms`);
-          ok++;
-        } catch (error) {
-          lines.push(`❌ ${engine.name}（${engine.id}）：${describeError(error)}`);
-          bad++;
-        }
-      }
-      lines.push('', `结果：${ok} 可用 / ${bad} 不可用`);
-      service.channel.appendLine(lines.join('\n'));
-      service.channel.show(true);
-      void vscode.window.showInformationMessage(`全引擎检测完成：${ok} 可用 / ${bad} 不可用（详情见输出面板）`);
-    }),
-
-    register('translation.clearCache', async () => {
-      const size = await service.cache.clear();
-      void vscode.window.showInformationMessage(`翻译缓存已清空（${size} 条）`);
-    }),
-
-    register('translation.testEngine', async () => {
-      const sample = 'Hello, world! This is a translation smoke test.';
-      try {
-        const outcome = await progress('测试翻译引擎…', () => service.translate(sample));
-        const preview = `译文：${outcome.text}\n引擎：${outcome.engineName}\n耗时：${outcome.elapsedMs}ms`;
-        const pick = await vscode.window.showInformationMessage(preview, '查看日志');
-        if (pick === '查看日志') {
-          service.channel.show(true);
-        }
-      } catch (error) {
-        await reportError(service, error, '测试引擎');
-      }
-    })
   ];
 
   return disposables;

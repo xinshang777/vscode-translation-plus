@@ -47,7 +47,7 @@ export function labelOf(id: string): string {
   return lang ? `${lang.label}` : id;
 }
 
-export type EngineId = 'google' | 'bing' | 'deepl' | 'youdao' | 'baidu' | 'tencent' | 'aliyun' | 'volcengine' | 'caiyun' | 'openai' | 'custom';
+export type EngineId = 'google' | 'bing' | 'deepl' | 'youdao' | 'baidu' | 'aliyun' | 'openai' | 'custom';
 
 /** 把内部语言码转换成各引擎自己的写法。 */
 export function engineCode(engine: EngineId, id: string): string {
@@ -107,10 +107,8 @@ export function iso2(id: string): string {
  * 只排除能确定不支持的语言，避免误伤；可通过 translation.filterLanguages 关闭。
  */
 const ENGINE_SUPPORT: Partial<Record<EngineId, string[]>> = {
-  caiyun: ['zh-CN', 'zh-TW', 'en', 'ja'],
   deepl: LANGUAGES.filter((lang) => !['th', 'vi', 'hi'].includes(lang.id)).map((lang) => lang.id),
   baidu: LANGUAGES.filter((lang) => !['uk'].includes(lang.id)).map((lang) => lang.id),
-  volcengine: LANGUAGES.filter((lang) => !['uk'].includes(lang.id)).map((lang) => lang.id)
 };
 
 export function supportedTargets(engine: EngineId, filter: boolean): LanguageDef[] {

@@ -1,4 +1,17 @@
+## 2.3.0（对齐 IDEA：删掉自己加的东西）
+
+- 删除替换预览文档（replace.md）与 diff 预览及其设置 `previewBeforeReplace`
+- 删除命令：复制译文（独立动作）、整文件注释翻译、清空缓存、测试引擎、检测全部引擎、自检
+- 删除编辑区侧栏卡片（CardPanel），只保留侧边栏 Webview 卡片
+- 引擎收敛为 IDEA 的 7 家 + 自定义：移除腾讯云 / 火山引擎 / 彩云小译
+- 命令注册改为「只注册 package.json 声明过的动作」，未声明的实现不会再被激活
+
 # Changelog
+
+## 2.3.0
+
+- **移除侧栏「翻译卡片」视图**（`translationPlus.card` WebviewView）、活动栏容器 Translation Plus，以及 `CardViewProvider` / `cardHtml` / `cardPanel` 与 `translation.toggleCardPanel` 命令。悬停卡片、`全部释义`、`钉住`、`替换/复制/朗读/收藏` 全部保留，翻译主流程不受影响。
+- 原因：侧栏常驻卡片与悬停卡片信息重复，实际使用中基本看悬停卡片。
 
 ## 1.7.0（B 类可替代项）
 

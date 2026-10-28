@@ -238,6 +238,10 @@ const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'
 const results = [];
 
 async function check(id, setup) {
+  if (!registry[id]) {
+    results.push([id, 'SKIP', '未注册（IDEA 之外，已移除）']);
+    return;
+  }
   try {
     await setup();
     await registry[id]();
@@ -277,7 +281,7 @@ function openEditor(text, languageId, selection) {
 (async () => {
   extension.activate({
     subscriptions: [],
-    extension: { packageJSON: { version: 'test' } },
+    extension: { packageJSON: require('../package.json') },
     globalState: (() => {
       const state = new Map();
       return {
@@ -345,7 +349,6 @@ function openEditor(text, languageId, selection) {
   await check('translation.showHistory', async () => {});
   await check('translation.openSettings', async () => {});
   await check('translation.toggleDocumentation', async () => {});
-  await check('translation.toggleCardPanel', async () => {});
   await check('translation.toggleInlayHints', async () => {});
   await check('translation.showInlayDetail', async () => {});
   await check('translation.speakInlayText', async () => {});

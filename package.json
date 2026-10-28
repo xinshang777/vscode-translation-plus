@@ -2,7 +2,7 @@
   "name": "translation-plus",
   "displayName": "Translation Plus（翻译并替换）",
   "description": "移植 IntelliJ IDEA Translation 插件的核心体验：选中文本一键翻译并原地替换。支持 Google / Bing / DeepL / 有道 / OpenAI 兼容 / 自定义接口，注释与字符串智能识别，diff 预览。",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "publisher": "local",
   "license": "MIT",
   "engines": {
@@ -242,23 +242,17 @@
             "bing",
             "google",
             "baidu",
-            "tencent",
             "aliyun",
-            "volcengine",
-            "caiyun",
             "deepl",
             "youdao",
             "openai",
             "custom"
           ],
           "enumDescriptions": [
-            "Bing 翻译（免费，国内可直连，默认）",
+            "Bing / Microsoft 翻译（免费，国内可直连，默认）",
             "Google 免费接口（免配置，国内需代理）",
             "百度翻译（需 appId + 密钥）",
-            "腾讯云翻译（需 SecretId + SecretKey，TC3 签名）",
-            "阿里云翻译（需 AccessKeyId + AccessKeySecret，RPC 签名）",
-            "火山引擎翻译（需 AK + SK，V4 签名）",
-            "彩云小译（需 token）",
+            "阿里云翻译（需 AccessKeyId + AccessKeySecret）",
             "DeepL（需 API Key，质量高）",
             "有道智云（需 appKey + appSecret）",
             "任意 OpenAI 兼容接口（质量最高，可自定义提示词）",
@@ -295,11 +289,6 @@
           "type": "boolean",
           "default": true,
           "description": "智能过滤字符串：忽略不含空格的字符串（如 import 路径、URL、常量名），只翻译像自然语言的字符串。"
-        },
-        "translation.previewBeforeReplace": {
-          "type": "boolean",
-          "default": false,
-          "description": "替换前先弹出差分预览，确认后再写入（对应 IDEA 插件的预览窗口）。"
         },
         "translation.preserveIndent": {
           "type": "boolean",
@@ -549,21 +538,6 @@
           "default": "",
           "description": "百度翻译密钥（建议用命令存入安全存储）。"
         },
-        "translation.tencent.secretId": {
-          "type": "string",
-          "default": "",
-          "description": "腾讯云 SecretId。"
-        },
-        "translation.tencent.secretKey": {
-          "type": "string",
-          "default": "",
-          "description": "腾讯云 SecretKey。"
-        },
-        "translation.tencent.region": {
-          "type": "string",
-          "default": "ap-guangzhou",
-          "description": "腾讯云地域。"
-        },
         "translation.aliyun.accessKeyId": {
           "type": "string",
           "default": "",
@@ -578,21 +552,6 @@
           "type": "string",
           "default": "cn-hangzhou",
           "description": "阿里云机器翻译地域。"
-        },
-        "translation.volcengine.accessKeyId": {
-          "type": "string",
-          "default": "",
-          "description": "火山引擎 Access Key ID。"
-        },
-        "translation.volcengine.secretKey": {
-          "type": "string",
-          "default": "",
-          "description": "火山引擎 Secret Access Key。"
-        },
-        "translation.caiyun.token": {
-          "type": "string",
-          "default": "",
-          "description": "彩云小译 token。"
         },
         "translation.openai.endpoint": {
           "type": "string",
@@ -646,24 +605,6 @@
           "description": "从响应 JSON 中取译文的路径，例如 data.translations.0.text；留空则按纯文本处理响应。"
         }
       }
-    },
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "translationPlus",
-          "title": "Translation Plus",
-          "icon": "assets/icon.png"
-        }
-      ]
-    },
-    "views": {
-      "translationPlus": [
-        {
-          "type": "webview",
-          "id": "translationPlus.card",
-          "name": "翻译卡片"
-        }
-      ]
     }
   },
   "scripts": {
